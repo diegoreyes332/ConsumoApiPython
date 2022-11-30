@@ -5,15 +5,22 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, EmailStr 
 from bson import ObjectId 
 from typing import Optional, List 
+from fastapi.middleware.cors import CORSMiddleware
 import motor.motor_asyncio
 
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 MONGODB_URL ='mongodb+srv://diegoreyesmosquera:Estarasenmimente@cluster0.zvacvnc.mongodb.net/test'
 
 client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URL)
-db = client.misiontic
+db = client.ventaviajes
 
 
 class PyObjectId(ObjectId):
@@ -31,88 +38,84 @@ class PyObjectId(ObjectId):
     def __modify_schema__(cls, field_schema): 
         field_schema.update(type="string")
 
-class StudentModel(BaseModel):
+class viajeModel(BaseModel):
    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id") 
-   Nombre: str = Field(...)
-   email: EmailStr = Field(...) 
-   Curso: str = Field(...) 
-   Edad: int = Field(..., le=40)
-
+   destino: str = Field("...")
+   ida: str = Field("...") 
+   regreso: str = Field("...") 
+   
    class Config: 
        allow_population_by_field_name = True 
        arbitrary_types_allowed = True 
        json_encoders = {ObjectId: str} 
        schema_extra = { 
            "example": { 
-                "Nombre": "Jane Doe",
-                "email": "jdoe@example.com",
-                "Curso": "Desarrollo de aplicaciones Web",
-                "Edad": "23"
+                "destino": "Jane Doe",
+                "ida": "jdoe@example.com",
+                "regreso": "Desarrollo de aplicaciones Web"
            } 
         } 
 
-class UpdateStudentModel(BaseModel): 
-   Nombre: Optional[str]
-   email: Optional[EmailStr] 
-   Curso: Optional[str] 
-   Edad: Optional[int]
-
+class UpdateviajeModel(BaseModel): 
+   destino: Optional[str]
+   ida: Optional[str] 
+   regreso: Optional[str] 
+   
    class Config: 
        arbitrary_types_allowed = True 
        json_encoders = {ObjectId: str} 
        schema_extra = {
            "example": { 
-                "Nombre": "Jane Doe", 
-                "email": "jdoe@example.com", 
-                "Curso": "Desarrollo de aplicaciones Web", 
-                "Edad": "30"
+                "destino": "Jane Doe", 
+                "ida": "jdoe@example.com", 
+                "regreso": "Desarrollo de aplicaciones Web"
            }  
         }       
 
-@app.post("/", response_description="Add new student",response_model=StudentModel) 
-async def create_student(student: StudentModel = Body(...)): 
-   student = jsonable_encoder(student) 
-   new_student = await db["tripulantes"].insert_one(student) 
-   created_student = await db["tripulantes"].find_one({"_id": new_student.inserted_id}) 
-   return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_student)
+@app.post("/", response_description="Add new viaje",response_model=viajeModel) 
+async def create_viaje(viaje: viajeModel = Body(...)): 
+   viaje = jsonable_encoder(viaje) 
+   new_viaje = await db["sitios"].insert_one(viaje) 
+   created_viaje = await db["sitios"].find_one({"_id": new_viaje.inserted_id}) 
+   return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_viaje)
 
-@app.get("/", response_description="List all students",response_model=List[StudentModel] )
-async def list_students(): 
-   students = await db["tripulantes"].find().to_list(1000) 
-   return students
+@app.get("/", response_description="List all viajes",response_model=List[viajeModel] )
+async def list_viajes(): 
+   viajes = await db["sitios"].find().to_list(1000) 
+   return viajes
 
-@app.get("/{id}", response_description="Get a single student",response_model=StudentModel ) 
-async def show_student(id: str): 
-    if (student := await db["tripulantes"].find_one({"_id": id})) is not None: 
-        return student
+@app.get("/{id}", response_description="Get a single viaje",response_model=viajeModel ) 
+async def show_viaje(id: str): 
+    if (viaje := await db["sitios"].find_one({"_id": id})) is not None: 
+        return viaje
 
-    raise HTTPException(status_code=404, detail=f"Student {id} not found")
+    raise HTTPException(status_code=404, detail=f"viaje {id} not found")
 
-@app.put("/{id}", response_description="Update a student", response_model=StudentModel) 
-async def update_student(id: str, student: UpdateStudentModel = Body(...)): 
-    student = {k: v for k, v in student.dict().items() if v is not None}
+@app.put("/{id}", response_description="Update a viaje", response_model=viajeModel) 
+async def update_viaje(id: str, viaje: UpdateviajeModel = Body(...)): 
+    viaje = {k: v for k, v in viaje.dict().items() if v is not None}
 
-    if len(student) >= 1: 
-     update_result = await db["tripulantes"].update_one({"_id": id}, {"$set": student})
+    if len(viaje) >= 1: 
+     update_result = await db["sitios"].update_one({"_id": id}, {"$set": viaje})
      
      if update_result.modified_count == 1: 
             if (
-                updated_student := await db["tripulantes"].find_one({"_id": id})
+                updated_viaje := await db["sitios"].find_one({"_id": id})
             ) is not None:
-                return updated_student
+                return updated_viaje
         
-    if (existing_student := await db["tripulantes"].find_one({"_id": id})) is not None:
-         return existing_student
+    if (existing_viaje := await db["sitios"].find_one({"_id": id})) is not None:
+         return existing_viaje
     
-    raise HTTPException(status_code=404, detail=f"Student {id} not found")
+    raise HTTPException(status_code=404, detail=f"viaje {id} not found")
 
-@app.delete("/{id}", response_description="Delete a student") 
-async def delete_student(id: str): 
-    delete_result = await db["tripulantes"].delete_one({"_id": id}) 
+@app.delete("/{id}", response_description="Delete a viaje") 
+async def delete_viaje(id: str): 
+    delete_result = await db["sitios"].delete_one({"_id": id}) 
     
     if delete_result.deleted_count == 1: 
         return Response(status_code=status.HTTP_204_NO_CONTENT) 
-    raise HTTPException(status_code=404, detail=f"Student {id} not found")    
+    raise HTTPException(status_code=404, detail=f"viaje {id} not found")    
 
 
 
