@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MONGODB_URL ='mongodb+srv://diegoreyesmosquera:Estarasenmimente@cluster0.zvacvnc.mongodb.net/test'
+#MONGODB_URL ='mongodb+srv://diegoreyesmosquera:<contraseña>@cluster0.zvacvnc.mongodb.net/test'
 
 client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URL)
 db = client.ventaviajes
